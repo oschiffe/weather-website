@@ -110,6 +110,29 @@ export default async function handler(
 function getMockPredictions(input: string): any[] {
   input = input.toLowerCase().trim();
   
+  // Special case for Vancouver, Washington
+  if (
+    input === 'vancouver washington' || 
+    input === 'vancouver washington us' ||
+    input === 'vancouver wash' ||
+    input === 'vancouver, washington' ||
+    input === 'vancouver, washington, us' ||
+    input === 'vancouver, wash'
+  ) {
+    return [
+      {
+        place_id: 'mock-vancouverwa',
+        description: 'Vancouver, Washington, US',
+        structured_formatting: {
+          main_text: 'Vancouver',
+          secondary_text: 'Washington, US'
+        },
+        lat: 45.6387281,
+        lng: -122.6614861
+      }
+    ];
+  }
+  
   const commonCities = [
     {
       place_id: 'mock-newyork',
@@ -206,6 +229,15 @@ function getMockPredictions(input: string): any[] {
       structured_formatting: {
         main_text: 'Vancouver',
         secondary_text: 'Canada'
+      }
+    },
+    // Add Vancouver, Washington entry
+    {
+      place_id: 'mock-vancouverwa',
+      description: 'Vancouver, Washington, US',
+      structured_formatting: {
+        main_text: 'Vancouver',
+        secondary_text: 'Washington, US'
       }
     },
     {

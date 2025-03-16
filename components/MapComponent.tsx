@@ -69,13 +69,14 @@ const MapComponent: React.FC<MapComponentProps> = ({ center, zoom, layer, onErro
           attributionControl: true,
           scrollWheelZoom: true,
           doubleClickZoom: true,
+          worldCopyJump: true, // Allows the map to wrap around the world
         }).setView(center, zoom);
         
         // Add base tile layer (OpenStreetMap)
         tileLayerRef.current = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
           attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
           maxZoom: 19,
-          minZoom: 2,
+          minZoom: 1, // Allow more zoomed out view
         }).addTo(mapInstanceRef.current);
         
         // Add weather layer
@@ -83,7 +84,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ center, zoom, layer, onErro
           attribution: '&copy; <a href="https://openweathermap.org/">OpenWeatherMap</a>',
           opacity: 0.8,
           maxZoom: 19,
-          minZoom: 2,
+          minZoom: 1, // Allow more zoomed out view
         }).addTo(mapInstanceRef.current);
         
         // Add error handler for tile loading errors
@@ -133,7 +134,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ center, zoom, layer, onErro
           attribution: '&copy; <a href="https://openweathermap.org/">OpenWeatherMap</a>',
           opacity: 0.8,
           maxZoom: 19,
-          minZoom: 2,
+          minZoom: 1, // Allow more zoomed out view
         }).addTo(mapInstanceRef.current);
         
         // Add error handler for tile loading errors

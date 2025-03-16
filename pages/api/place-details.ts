@@ -403,6 +403,17 @@ function getMockPlaceDetails(place_id: string): any {
       },
       formatted_address: 'Rome, Italy',
       name: 'Rome'
+    },
+    // Add Vancouver, WA, USA mock entry
+    'mock-vancouverwa': {
+      geometry: {
+        location: {
+          lat: 45.6387281,
+          lng: -122.6614861
+        }
+      },
+      formatted_address: 'Vancouver, Washington, US',
+      name: 'Vancouver'
     }
   };
   

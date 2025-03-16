@@ -4,21 +4,28 @@ export type TemperatureUnit = 'celsius' | 'fahrenheit';
 export type SpeedUnit = 'kph' | 'mph';
 export type TimeFormat = '12h' | '24h';
 export type Theme = 'system' | 'light' | 'dark';
+export type WindSpeedUnit = 'kph' | 'mph';
+export type ThemeMode = 'light' | 'dark' | 'system';
 
 interface SettingsContextType {
   temperatureUnit: TemperatureUnit;
   speedUnit: SpeedUnit;
   timeFormat: TimeFormat;
   theme: Theme;
+  windSpeedUnit: WindSpeedUnit;
+  themeMode: ThemeMode;
   setTemperatureUnit: (unit: TemperatureUnit) => void;
   setSpeedUnit: (unit: SpeedUnit) => void;
   setTimeFormat: (format: TimeFormat) => void;
   setTheme: (theme: Theme) => void;
+  setWindSpeedUnit: (unit: WindSpeedUnit) => void;
+  setThemeMode: (mode: ThemeMode) => void;
   saveSettings: () => void;
   resetSettings: () => void;
   convertTemperature: (tempC: number) => number;
   convertSpeed: (speedKph: number) => number;
   formatTimeString: (time: string) => string;
+  convertWindSpeed: (speedInMetersPerSecond: number) => number;
 }
 
 // Create context with default values
@@ -27,15 +34,20 @@ export const SettingsContext = createContext<SettingsContextType>({
   speedUnit: 'kph',
   timeFormat: '24h',
   theme: 'system',
+  windSpeedUnit: 'kph',
+  themeMode: 'system',
   setTemperatureUnit: () => {},
   setSpeedUnit: () => {},
   setTimeFormat: () => {},
   setTheme: () => {},
+  setWindSpeedUnit: () => {},
+  setThemeMode: () => {},
   saveSettings: () => {},
   resetSettings: () => {},
   convertTemperature: (temp) => temp,
   convertSpeed: (speed) => speed,
   formatTimeString: (time) => time,
+  convertWindSpeed: (speed) => speed,
 });
 
 interface SettingsProviderProps {
@@ -48,6 +60,8 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({ children }) 
   const [speedUnit, setSpeedUnit] = useState<SpeedUnit>('kph');
   const [timeFormat, setTimeFormat] = useState<TimeFormat>('24h');
   const [theme, setTheme] = useState<Theme>('system');
+  const [windSpeedUnit, setWindSpeedUnit] = useState<WindSpeedUnit>('kph');
+  const [themeMode, setThemeMode] = useState<ThemeMode>('system');
 
   // Load settings from localStorage on initial render
   useEffect(() => {
@@ -59,6 +73,8 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({ children }) 
         setSpeedUnit(settings.speedUnit || 'kph');
         setTimeFormat(settings.timeFormat || '24h');
         setTheme(settings.theme || 'system');
+        setWindSpeedUnit(settings.windSpeedUnit || 'kph');
+        setThemeMode(settings.themeMode || 'system');
       }
     } catch (error) {
       console.error('Error loading settings:', error);
@@ -72,7 +88,9 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({ children }) 
         temperatureUnit,
         speedUnit,
         timeFormat,
-        theme
+        theme,
+        windSpeedUnit,
+        themeMode
       };
       localStorage.setItem('weather-app-settings', JSON.stringify(settings));
       alert('Settings saved successfully!');
@@ -88,6 +106,8 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({ children }) 
     setSpeedUnit('kph');
     setTimeFormat('24h');
     setTheme('system');
+    setWindSpeedUnit('kph');
+    setThemeMode('system');
   };
 
   // Utility function to convert temperature based on selected unit
@@ -118,6 +138,74 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({ children }) 
     return time;
   };
 
+  // Save to localStorage when settings change
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('temperatureUnit', temperatureUnit);
+    }
+  }, [temperatureUnit]);
+  
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('speedUnit', speedUnit);
+    }
+  }, [speedUnit]);
+  
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('timeFormat', timeFormat);
+    }
+  }, [timeFormat]);
+  
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('theme', theme);
+      
+      // Apply theme
+      const root = window.document.documentElement;
+      const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+      
+      if (isDark) {
+        root.classList.add('dark');
+      } else {
+        root.classList.remove('dark');
+      }
+    }
+  }, [theme]);
+  
+  // Setup system theme change listener
+  useEffect(() => {
+    if (typeof window !== 'undefined' && theme === 'system') {
+      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      
+      const handleChange = () => {
+        const root = window.document.documentElement;
+        if (mediaQuery.matches) {
+          root.classList.add('dark');
+        } else {
+          root.classList.remove('dark');
+        }
+      };
+      
+      mediaQuery.addEventListener('change', handleChange);
+      return () => mediaQuery.removeEventListener('change', handleChange);
+    }
+  }, [theme]);
+
+  // Function to convert wind speed based on user setting
+  const convertWindSpeed = (speedInMetersPerSecond: number): number => {
+    // Convert from m/s to km/h first
+    const speedInKph = speedInMetersPerSecond * 3.6;
+    
+    if (windSpeedUnit === 'mph') {
+      // Convert from km/h to mph
+      return speedInKph * 0.621371;
+    }
+    
+    // Return in km/h
+    return speedInKph;
+  };
+
   return (
     <SettingsContext.Provider
       value={{
@@ -125,15 +213,20 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({ children }) 
         speedUnit,
         timeFormat,
         theme,
+        windSpeedUnit,
+        themeMode,
         setTemperatureUnit,
         setSpeedUnit,
         setTimeFormat,
         setTheme,
+        setWindSpeedUnit,
+        setThemeMode,
         saveSettings,
         resetSettings,
         convertTemperature,
         convertSpeed,
-        formatTimeString
+        formatTimeString,
+        convertWindSpeed
       }}
     >
       {children}

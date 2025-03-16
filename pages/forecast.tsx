@@ -15,59 +15,18 @@ import Button from '../components/Button';
 // Define the WeatherCondition type to match WeatherIcon props
 type WeatherCondition = 'clear' | 'partly-cloudy' | 'cloudy' | 'rain' | 'heavy-rain' | 'snow' | 'thunderstorm' | 'fog' | 'unknown';
 
-// Example data for demonstration
-const mockHourlyForecast: HourlyForecast[] = [
-  { time: '12 PM', temp: 22, condition: 'Clear', precipitation: 0 },
-  { time: '1 PM', temp: 23, condition: 'Partly Cloudy', precipitation: 0 },
-  { time: '2 PM', temp: 23.5, condition: 'Partly Cloudy', precipitation: 0 },
-  { time: '3 PM', temp: 24, condition: 'Cloudy', precipitation: 10 },
-  { time: '4 PM', temp: 23, condition: 'Rain', precipitation: 40 },
-  { time: '5 PM', temp: 22, condition: 'Rain', precipitation: 60 },
-  { time: '6 PM', temp: 21, condition: 'Rain', precipitation: 30 },
-  { time: '7 PM', temp: 20, condition: 'Partly Cloudy', precipitation: 10 },
-  { time: '8 PM', temp: 19, condition: 'Clear', precipitation: 0 },
-  { time: '9 PM', temp: 18, condition: 'Clear', precipitation: 0 },
-  { time: '10 PM', temp: 17, condition: 'Clear', precipitation: 0 },
-  { time: '11 PM', temp: 16, condition: 'Clear', precipitation: 0 },
-  // Next day
-  { time: '12 AM', temp: 15, condition: 'Clear', precipitation: 0 },
-  { time: '1 AM', temp: 14.5, condition: 'Clear', precipitation: 0 },
-  { time: '2 AM', temp: 14, condition: 'Clear', precipitation: 0 },
-  { time: '3 AM', temp: 13.5, condition: 'Clear', precipitation: 0 },
-  { time: '4 AM', temp: 13, condition: 'Clear', precipitation: 0 },
-  { time: '5 AM', temp: 13.5, condition: 'Partly Cloudy', precipitation: 0 },
-  { time: '6 AM', temp: 14, condition: 'Partly Cloudy', precipitation: 0 },
-  { time: '7 AM', temp: 15, condition: 'Partly Cloudy', precipitation: 0 },
-  { time: '8 AM', temp: 16, condition: 'Partly Cloudy', precipitation: 0 },
-  { time: '9 AM', temp: 18, condition: 'Partly Cloudy', precipitation: 0 },
-  { time: '10 AM', temp: 20, condition: 'Clear', precipitation: 0 },
-  { time: '11 AM', temp: 21, condition: 'Clear', precipitation: 0 },
-];
-
-const mockDailyForecast: DailyForecast[] = [
-  { date: 'Jun 1', day: 'Monday', tempMax: 24, tempMin: 16, condition: 'Partly Cloudy', precipitation: 10 },
-  { date: 'Jun 2', day: 'Tuesday', tempMax: 26, tempMin: 17, condition: 'Clear', precipitation: 0 },
-  { date: 'Jun 3', day: 'Wednesday', tempMax: 27, tempMin: 18, condition: 'Clear', precipitation: 0 },
-  { date: 'Jun 4', day: 'Thursday', tempMax: 28, tempMin: 19, condition: 'Clear', precipitation: 0 },
-  { date: 'Jun 5', day: 'Friday', tempMax: 26, tempMin: 19, condition: 'Partly Cloudy', precipitation: 20 },
-  { date: 'Jun 6', day: 'Saturday', tempMax: 24, tempMin: 18, condition: 'Rain', precipitation: 70 },
-  { date: 'Jun 7', day: 'Sunday', tempMax: 23, tempMin: 17, condition: 'Rain', precipitation: 50 },
-  { date: 'Jun 8', day: 'Monday', tempMax: 22, tempMin: 16, condition: 'Rain', precipitation: 30 },
-  { date: 'Jun 9', day: 'Tuesday', tempMax: 21, tempMin: 15, condition: 'Cloudy', precipitation: 20 },
-  { date: 'Jun 10', day: 'Wednesday', tempMax: 23, tempMin: 16, condition: 'Partly Cloudy', precipitation: 10 },
-];
-
 export default function Forecast() {
   const [activeView, setActiveView] = useState<'daily' | 'hourly'>('daily');
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [locationName, setLocationName] = useState<string>('San Francisco, CA');
+  const [locationName, setLocationName] = useState<string>('');
   const [locationError, setLocationError] = useState<string | null>(null);
   const [currentWeather, setCurrentWeather] = useState<string>('clear');
   const [isDay, setIsDay] = useState<boolean>(true);
   
-  // State for forecast data, would be populated from API in a real app
-  const [hourlyData, setHourlyData] = useState<HourlyForecast[]>(mockHourlyForecast);
-  const [dailyData, setDailyData] = useState<DailyForecast[]>(mockDailyForecast);
+  // State for forecast data
+  const [hourlyData, setHourlyData] = useState<HourlyForecast[]>([]);
+  const [dailyData, setDailyData] = useState<DailyForecast[]>([]);
+  const [weatherData, setWeatherData] = useState<any>(null);
   const { temperatureUnit, convertTemperature } = useSettings();
 
   // Function to get user's current location
@@ -108,21 +67,47 @@ export default function Forecast() {
     setLocationError(null);
     
     try {
-      // If we had real API for forecast, we'd call it here
+      // Make API call to get weather data
       console.log(`Fetching forecast for ${location} at coordinates:`, lat, lon);
       
-      // Simulate API request delay
-      await new Promise(resolve => setTimeout(resolve, 800));
+      if (!lat || !lon) {
+        throw new Error('Latitude and longitude are required.');
+      }
       
-      // For demo purposes, we'll use our mock data with a slight modification
-      // In a real app, this would be replaced with actual API data
-      setLocationName(location);
+      // Fetch current weather
+      const weatherResponse = await fetch(`/api/weather?lat=${lat}&lon=${lon}&originalLocationName=${encodeURIComponent(location)}`);
+      if (!weatherResponse.ok) {
+        throw new Error('Failed to fetch current weather data');
+      }
+      const weatherData = await weatherResponse.json();
+      
+      // Fetch forecast data from our new API endpoint
+      const forecastResponse = await fetch(`/api/forecast?lat=${lat}&lon=${lon}&originalLocationName=${encodeURIComponent(location)}`);
+      if (!forecastResponse.ok) {
+        throw new Error('Failed to fetch forecast data');
+      }
+      const forecastData = await forecastResponse.json();
+      
+      setLocationName(weatherData.name);
+      setWeatherData(weatherData);
+      
+      // Set current weather condition based on API response
+      const condition = weatherData.weather[0].main.toLowerCase();
+      setCurrentWeather(
+        condition.includes('clear') ? 'clear' :
+        condition.includes('cloud') ? 'cloudy' :
+        condition.includes('rain') ? 'rain' :
+        condition.includes('snow') ? 'snow' :
+        condition.includes('thunder') ? 'thunderstorm' :
+        condition.includes('fog') || condition.includes('mist') ? 'fog' :
+        'clear'
+      );
+      
+      // Set the hourly and daily forecast data from the API response
+      setHourlyData(forecastData.hourly);
+      setDailyData(forecastData.daily);
+      
       setIsLoading(false);
-      
-      // Set random weather condition for demo purposes
-      const weatherTypes = ['clear', 'cloudy', 'rain', 'snow', 'partly'];
-      const randomWeather = weatherTypes[Math.floor(Math.random() * weatherTypes.length)];
-      setCurrentWeather(randomWeather);
       
     } catch (error) {
       console.error('Error fetching forecast:', error);

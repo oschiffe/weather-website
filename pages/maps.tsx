@@ -10,6 +10,7 @@ import dynamic from 'next/dynamic';
 type MapType = 'temperature' | 'precipitation' | 'wind' | 'pressure' | 'clouds';
 
 // Dynamically import the Map component with no SSR to avoid hydration issues
+// Note: The map requires marker icon assets that are loaded from the public/images directory
 const MapComponent = dynamic(() => import('../components/MapComponent'), { 
   ssr: false,
   loading: () => (
@@ -27,7 +28,7 @@ export default function WeatherMaps() {
     name: 'New York, NY',
     lat: 40.7128,
     lon: -74.0060,
-    zoom: 5
+    zoom: 3  // Start more zoomed out to show a larger area
   });
   
   const [locationError, setLocationError] = useState<string | null>(null);
@@ -54,7 +55,7 @@ export default function WeatherMaps() {
       name: description,
       lat: lat,
       lon: lng,
-      zoom: 7 // Zoom closer for specific locations
+      zoom: 5 // Use a medium zoom level for specific locations
     });
 
     // Force map to refresh with new location
@@ -81,7 +82,7 @@ export default function WeatherMaps() {
             name: 'Current Location',
             lat: latitude,
             lon: longitude,
-            zoom: 8 // Better zoom for current location
+            zoom: 6 // Better zoom for current location
           });
           
           // Force map to refresh with new location

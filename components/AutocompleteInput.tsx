@@ -171,11 +171,11 @@ const AutocompleteInput: React.FC<AutocompleteInputProps> = ({
         }
       } else {
         console.error('Error getting place details:', data);
-        setGeneralError('Failed to get location details. Please try again.');
+        setGeneralError(`Failed to get location details for "${place.description}". Please try again.`);
       }
     } catch (err) {
       console.error('Error in place selection:', err);
-      setGeneralError('An error occurred. Please try again.');
+      setGeneralError(`Failed to get location details for "${place.description}". Please try again.`);
     } finally {
       setIsLoading(false);
     }
