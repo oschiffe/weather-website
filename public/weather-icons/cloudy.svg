@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <linearGradient id="cloud-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="100%" stop-color="#E6E6E6" />
+    </linearGradient>
+    <filter id="cloud-shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="2" />
+      <feOffset dx="1" dy="1" result="offsetblur" />
+      <feComponentTransfer>
+        <feFuncA type="linear" slope="0.3" />
+      </feComponentTransfer>
+      <feMerge>
+        <feMergeNode />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- Main cloud -->
+  <path d="M48,36c0-8.8-7.2-16-16-16c-7.8,0-14.3,5.6-15.7,13c-4.6,0.8-8.3,5-8.3,9.8C8,48.6,12.4,53,18,53h28c5.5,0,10-4.5,10-10
+    C56,39.6,52.6,36.8,48,36z" fill="url(#cloud-gradient)" filter="url(#cloud-shadow)" />
+  
+  <!-- Small cloud -->
+  <path d="M20,28c0-4.4-3.6-8-8-8c-3.9,0-7.2,2.8-7.8,6.5C2.3,26.8,1,28.3,1,30c0,2.2,1.8,4,4,4h12c2.2,0,4-1.8,4-4
+    C21,29.4,20.6,28.7,20,28z" fill="url(#cloud-gradient)" filter="url(#cloud-shadow)" opacity="0.7" />
+  
+  <!-- Medium cloud -->
+  <path d="M62,20c0-3.3-2.7-6-6-6c-2.9,0-5.4,2.1-5.9,4.9c-0.7,0.2-1.3,0.8-1.8,1.6C48,21.3,48.4,22,49,22h10c1.7,0,3-1.3,3-3
+    C62,19,62,20,62,20z" fill="url(#cloud-gradient)" filter="url(#cloud-shadow)" opacity="0.9" />
+</svg> 
