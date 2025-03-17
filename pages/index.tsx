@@ -69,7 +69,7 @@ export default function Home() {
   const { theme } = useTheme();
   const router = useRouter();
 
-  // Use demo data for the initial load
+  // Load initial weather data for a default location
   useEffect(() => {
     // Get weather type from URL query param for testing
     if (router.isReady) {
@@ -95,10 +95,39 @@ export default function Home() {
         setIntensity(intensityParam as 'low' | 'medium' | 'high');
       }
       
-      setHourlyForecast(mockHourlyForecast);
-      setDailyForecast(mockDailyForecast);
+      // Fetch real forecast data for the default location
+      fetchForecastData(demoWeatherData.lat, demoWeatherData.lon);
     }
   }, [router.isReady, router.query]);
+
+  // Fetch forecast data from API
+  const fetchForecastData = async (lat: number, lon: number) => {
+    try {
+      // Fetch hourly forecast
+      const hourlyResponse = await fetch(`/api/forecast?lat=${lat}&lon=${lon}&forecast_type=hourly`);
+      if (!hourlyResponse.ok) {
+        throw new Error('Failed to fetch hourly forecast data');
+      }
+      const hourlyData = await hourlyResponse.json();
+      
+      // Fetch daily forecast
+      const dailyResponse = await fetch(`/api/forecast?lat=${lat}&lon=${lon}&forecast_type=daily`);
+      if (!dailyResponse.ok) {
+        throw new Error('Failed to fetch daily forecast data');
+      }
+      const dailyData = await dailyResponse.json();
+      
+      setHourlyForecast(hourlyData.hourlyForecast);
+      setDailyForecast(dailyData.dailyForecast);
+      setLoading(false);
+    } catch (err) {
+      console.error('Error fetching forecast data:', err);
+      // Don't fallback to mock data
+      setLoading(false);
+      // Show error state instead
+      setError('Unable to fetch forecast data. Please try again later.');
+    }
+  };
 
   const handlePlaceSelect = async (placeId: string, description: string, lat: number, lng: number) => {
     try {
@@ -149,9 +178,8 @@ export default function Home() {
                      conditionLower.includes('fog') || conditionLower.includes('mist') ? 'fog' :
                      'clear');
       
-      // For now, we'll still use mock hourly/daily forecast data
-      setHourlyForecast(mockHourlyForecast);
-      setDailyForecast(mockDailyForecast);
+      // Fetch real forecast data for the selected location
+      fetchForecastData(realWeatherData.lat, realWeatherData.lon);
       
     } catch (err) {
       console.error('Error fetching weather data:', err);
@@ -255,6 +283,7 @@ export default function Home() {
                 </h2>
                 <WeatherForecast 
                   dailyForecast={dailyForecast}
+                  hourlyForecast={hourlyForecast}
                   cityName={weatherData.name}
                 />
               </div>

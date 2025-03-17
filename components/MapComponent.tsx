@@ -1,15 +1,15 @@
 import React, { useEffect, useRef, useState } from 'react';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
+import dynamic from 'next/dynamic';
+
+// Import Leaflet only on client-side
+const L = typeof window !== 'undefined' ? require('leaflet') : null;
 
 // Fix for Leaflet marker icon issue in Next.js
-// (needed because Leaflet expects the images in a specific location)
 const fixLeafletIcon = () => {
   // Only run on client side
-  if (typeof window === 'undefined') return;
+  if (typeof window === 'undefined' || !L) return;
 
   // Delete the default icon
-  // Using type assertion to avoid TypeScript error
   delete (L.Icon.Default.prototype as any)._getIconUrl;
 
   // Set up the default icon paths
@@ -37,6 +37,32 @@ const MapComponent: React.FC<MapComponentProps> = ({ center, zoom, layer, onErro
   const [mapError, setMapError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   
+  // Import Leaflet CSS on client side
+  useEffect(() => {
+    // Only import CSS on client side
+    require('leaflet/dist/leaflet.css');
+    
+    // These specific fixes are for the control layers icons
+    const styleEl = document.createElement('style');
+    styleEl.appendChild(document.createTextNode(`
+      .leaflet-control-layers-toggle {
+        background-image: url('/images/layers.png') !important;
+        width: 36px;
+        height: 36px;
+      }
+      .leaflet-retina .leaflet-control-layers-toggle {
+        background-image: url('/images/layers-2x.png') !important;
+        background-size: 26px 26px;
+      }
+    `));
+    document.head.appendChild(styleEl);
+
+    return () => {
+      // Clean up added styles when component unmounts
+      styleEl.remove();
+    };
+  }, []);
+
   useEffect(() => {
     // Fix Leaflet icon issue
     fixLeafletIcon();
@@ -88,16 +114,18 @@ const MapComponent: React.FC<MapComponentProps> = ({ center, zoom, layer, onErro
         }).addTo(mapInstanceRef.current);
         
         // Add error handler for tile loading errors
-        weatherLayerRef.current.on('tileerror', (error) => {
-          console.error('Tile error:', error);
-          setMapError('Failed to load weather tiles. Please try again later.');
-          if (onError) onError();
-        });
-        
-        // Add success handler for tile loading completion
-        weatherLayerRef.current.on('load', () => {
-          setIsLoading(false);
-        });
+        if (weatherLayerRef.current) {
+          weatherLayerRef.current.on('tileerror', (error) => {
+            console.error('Tile error:', error);
+            setMapError('Failed to load weather tiles. Please try again later.');
+            if (onError) onError();
+          });
+          
+          // Add success handler for tile loading completion
+          weatherLayerRef.current.on('load', () => {
+            setIsLoading(false);
+          });
+        }
         
         // Custom icon for better visibility
         const customIcon = L.icon({
@@ -138,16 +166,18 @@ const MapComponent: React.FC<MapComponentProps> = ({ center, zoom, layer, onErro
         }).addTo(mapInstanceRef.current);
         
         // Add error handler for tile loading errors
-        weatherLayerRef.current.on('tileerror', (error) => {
-          console.error('Tile error:', error);
-          setMapError('Failed to load weather tiles. Please try again later.');
-          if (onError) onError();
-        });
-        
-        // Add success handler for tile loading completion
-        weatherLayerRef.current.on('load', () => {
-          setIsLoading(false);
-        });
+        if (weatherLayerRef.current) {
+          weatherLayerRef.current.on('tileerror', (error) => {
+            console.error('Tile error:', error);
+            setMapError('Failed to load weather tiles. Please try again later.');
+            if (onError) onError();
+          });
+          
+          // Add success handler for tile loading completion
+          weatherLayerRef.current.on('load', () => {
+            setIsLoading(false);
+          });
+        }
         
         // Update marker position
         if (markerRef.current) {
@@ -198,7 +228,13 @@ const MapComponent: React.FC<MapComponentProps> = ({ center, zoom, layer, onErro
       <div 
         ref={mapRef} 
         className="w-full h-full rounded-lg overflow-hidden shadow-md"
-        style={{ minHeight: '500px' }}
+        style={{ 
+          minHeight: '500px',
+          width: '100%',
+          height: '100%',
+          position: 'relative',
+          zIndex: 1
+        }}
       />
       
       {isLoading && (

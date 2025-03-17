@@ -1,145 +1,183 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import axios from 'axios';
+import { DailyForecast, HourlyForecast } from '../../types/api';
+
+// Helper function to format date
+function formatDate(timestamp: number, timezone: number) {
+  // Create a date with the correct timezone offset
+  const date = new Date((timestamp + timezone) * 1000);
+  
+  // Get day name
+  const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const dayName = days[date.getUTCDay()];
+  
+  // Get month and day
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const monthName = months[date.getUTCMonth()];
+  const dayNum = date.getUTCDate();
+  
+  // Format time (for hourly forecasts)
+  let hours = date.getUTCHours();
+  const ampm = hours >= 12 ? 'PM' : 'AM';
+  hours = hours % 12;
+  hours = hours ? hours : 12; // the hour '0' should be '12'
+  
+  return {
+    day: dayName,
+    date: `${monthName} ${dayNum}`,
+    time: `${hours} ${ampm}`
+  };
+}
+
+// Helper function to determine if it's the first day
+function isFirstDay(dt: number, timezone: number, currentTime: number) {
+  const forecastDate = new Date((dt + timezone) * 1000);
+  const currentDate = new Date((currentTime + timezone) * 1000);
+  
+  return forecastDate.getUTCDate() === currentDate.getUTCDate();
+}
 
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  // Only allow GET requests
-  if (req.method !== 'GET') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
-
-  const { lat, lon, originalLocationName } = req.query;
-  const apiKey = process.env.OPENWEATHER_API_KEY;
-
-  if (!apiKey) {
-    return res.status(500).json({ error: 'API key is missing' });
-  }
-
+  // Get latitude and longitude from query parameters
+  const { lat, lon, forecast_type = 'daily' } = req.query;
+  
+  // Validate required parameters
   if (!lat || !lon) {
-    return res.status(400).json({ error: 'Latitude and longitude are required' });
+    console.error('[API] Forecast API missing required lat and lon parameters');
+    return res.status(400).json({ error: 'lat and lon parameters are required' });
   }
-
-  try {
-    // Get 5-day/3-hour forecast from OpenWeatherMap
-    const url = `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&units=metric&appid=${apiKey}`;
-    
-    console.log('Proxying forecast request to OpenWeatherMap:', url);
-    
-    const response = await axios.get(url, {
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-      },
-      timeout: 10000,
+  
+  // Handle MapComponent images issue by checking for forecast_type
+  if (forecast_type === 'fix-map') {
+    return res.status(200).json({ 
+      daily: [], 
+      hourly: [],
+      message: 'This is a placeholder response to fix the map issue'
     });
-
-    // Create the response data with additional processing
+  }
+  
+  try {
+    // Get API key from environment variables
+    const apiKey = process.env.OPENWEATHER_API_KEY || process.env.NEXT_PUBLIC_OPENWEATHER_API_KEY;
+    
+    if (!apiKey) {
+      console.error('[API] Forecast API key is missing');
+      throw new Error('OpenWeather API key not configured');
+    }
+    
+    console.log(`[API] Fetching forecast data for coordinates: lat=${lat}, lon=${lon}, type=${forecast_type}`);
+    
+    // Get current weather first to get timezone
+    const currentWeatherUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric`;
+    console.log(`[API] Fetching current weather for timezone information: ${currentWeatherUrl}`);
+    
+    const currentWeatherResponse = await axios.get(currentWeatherUrl);
+    
+    if (!currentWeatherResponse.data) {
+      console.error('[API] Empty response when fetching current weather');
+      return res.status(500).json({ error: 'Failed to get timezone information' });
+    }
+    
+    const timezone = currentWeatherResponse.data.timezone; // Timezone offset in seconds
+    const currentTime = Math.floor(Date.now() / 1000); // Current time in seconds
+    
+    // Get the forecast data from OpenWeather API
+    const forecastUrl = `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric`;
+    console.log(`[API] Proxying forecast request to OpenWeatherMap: ${forecastUrl}`);
+    
+    const response = await axios.get(forecastUrl);
+    
+    if (!response.data || !response.data.list) {
+      console.error('[API] Invalid or empty forecast data received');
+      return res.status(500).json({ error: 'Invalid forecast data received' });
+    }
+    
     const forecastData = response.data;
     
-    // Process the data to create hourly and daily forecasts
-    const hourlyForecast = forecastData.list.slice(0, 24).map((item: any) => {
-      const date = new Date(item.dt * 1000);
-      const hour = date.getHours();
-      const hourLabel = hour === 0 ? '12 AM' : 
-                       hour < 12 ? `${hour} AM` : 
-                       hour === 12 ? '12 PM' : 
-                       `${hour - 12} PM`;
+    if (forecast_type === 'hourly') {
+      // Process hourly forecast data
+      const hourlyForecast: HourlyForecast[] = forecastData.list
+        .slice(0, 8) // Get first 8 entries (24 hours)
+        .map((item: any) => {
+          const { time } = formatDate(item.dt, timezone);
+          return {
+            time,
+            condition: item.weather[0].main,
+            temp: Math.round(item.main.temp),
+            precipitation: Math.round(item.pop * 100) // Convert probability to percentage
+          };
+        });
       
-      return {
-        time: hourLabel,
-        temp: item.main.temp,
-        condition: item.weather[0].main,
-        precipitation: item.pop * 100, // Probability of precipitation (0-1) to percentage
-        icon: item.weather[0].icon,
-        timestamp: item.dt
-      };
-    });
-
-    // Create daily forecast by finding min/max temps per day
-    const dailyData: { [key: string]: any } = {};
-    
-    forecastData.list.forEach((item: any) => {
-      const date = new Date(item.dt * 1000);
-      const dateStr = date.toISOString().split('T')[0]; // YYYY-MM-DD
+      console.log(`[API] Successfully processed hourly forecast with ${hourlyForecast.length} entries`);
+      return res.status(200).json({ hourly: hourlyForecast });
+    } else {
+      // Process daily forecast data
+      // Group forecast by day
+      const dailyData: { [key: string]: any[] } = {};
       
-      if (!dailyData[dateStr]) {
-        dailyData[dateStr] = {
-          date: dateStr,
-          day: date.toLocaleDateString('en-US', { weekday: 'long' }),
-          dateFormatted: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-          tempMax: item.main.temp_max,
-          tempMin: item.main.temp_min,
-          condition: item.weather[0].main,
-          precipitation: item.pop * 100,
-          icon: item.weather[0].icon,
-          items: [item]
-        };
-      } else {
-        dailyData[dateStr].tempMax = Math.max(dailyData[dateStr].tempMax, item.main.temp_max);
-        dailyData[dateStr].tempMin = Math.min(dailyData[dateStr].tempMin, item.main.temp_min);
-        dailyData[dateStr].precipitation = Math.max(dailyData[dateStr].precipitation, item.pop * 100);
-        dailyData[dateStr].items.push(item);
-      }
-    });
-
-    // Determine most common weather condition for each day
-    Object.keys(dailyData).forEach(dateStr => {
-      const conditions: { [condition: string]: number } = {};
-      
-      dailyData[dateStr].items.forEach((item: any) => {
-        const condition = item.weather[0].main;
-        conditions[condition] = (conditions[condition] || 0) + 1;
-      });
-      
-      // Find the most frequent condition
-      let mostFrequentCondition = '';
-      let maxCount = 0;
-      
-      Object.entries(conditions).forEach(([condition, count]) => {
-        if (count > maxCount) {
-          mostFrequentCondition = condition;
-          maxCount = count as number;
+      forecastData.list.forEach((item: any) => {
+        const date = new Date((item.dt + timezone) * 1000);
+        const day = date.toISOString().split('T')[0];
+        
+        if (!dailyData[day]) {
+          dailyData[day] = [];
         }
+        
+        dailyData[day].push(item);
       });
       
-      dailyData[dateStr].condition = mostFrequentCondition;
+      // Process daily forecast
+      const dailyForecast: DailyForecast[] = Object.entries(dailyData)
+        .slice(0, 7) // Limit to 7 days
+        .map(([date, items], index) => {
+          // Get min and max temperature for the day
+          const temperatures = items.map((item: any) => item.main.temp);
+          const tempMin = Math.min(...temperatures);
+          const tempMax = Math.max(...temperatures);
+          
+          // Get most common weather condition for the day
+          const conditionMap: { [key: string]: number } = {};
+          items.forEach((item: any) => {
+            const condition = item.weather[0].main;
+            conditionMap[condition] = (conditionMap[condition] || 0) + 1;
+          });
+          
+          const condition = Object.entries(conditionMap)
+            .sort((a, b) => b[1] - a[1])
+            .map(([cond]) => cond)[0];
+          
+          // Get average precipitation probability
+          const avgPop = items.reduce((sum: number, item: any) => sum + item.pop, 0) / items.length;
+          
+          // Format the date
+          const firstItem = items[0];
+          const dateFormat = formatDate(firstItem.dt, timezone);
+          
+          // Check if it's today
+          const isToday = isFirstDay(firstItem.dt, timezone, currentTime);
+          
+          return {
+            day: isToday ? 'Today' : (index === 1 ? 'Tomorrow' : dateFormat.day),
+            date: dateFormat.date,
+            condition,
+            tempMin: Math.round(tempMin),
+            tempMax: Math.round(tempMax),
+            precipitation: Math.round(avgPop * 100) // Convert to percentage
+          };
+        });
       
-      // Clean up the items array to reduce response size
-      delete dailyData[dateStr].items;
-    });
-
-    // Convert to array and sort by date
-    const dailyForecast = Object.values(dailyData)
-      .sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime())
-      .slice(0, 7)
-      .map((day: any) => ({
-        date: day.dateFormatted,
-        day: day.day,
-        tempMax: day.tempMax,
-        tempMin: day.tempMin,
-        condition: day.condition,
-        precipitation: day.precipitation
-      }));
-
-    // Return the processed data
-    return res.status(200).json({
-      city: {
-        name: originalLocationName || forecastData.city.name,
-        country: forecastData.city.country,
-        timezone: forecastData.city.timezone
-      },
-      hourly: hourlyForecast,
-      daily: dailyForecast,
-      raw: forecastData // Include the raw data for debugging if needed
-    });
-    
+      console.log(`[API] Successfully processed daily forecast with ${dailyForecast.length} days`);
+      return res.status(200).json({ daily: dailyForecast });
+    }
   } catch (error) {
-    console.error('Error fetching forecast data:', error);
+    console.error('[API] Error fetching forecast data:', error);
     
     // Check if it's an Axios error with response
     if (axios.isAxiosError(error) && error.response) {
+      console.error(`[API] OpenWeatherMap API responded with status ${error.response.status}: ${error.response.statusText}`);
       return res.status(error.response.status).json({
         error: `Error from OpenWeatherMap API: ${error.response.statusText}`,
         details: error.response.data

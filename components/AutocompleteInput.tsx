@@ -25,15 +25,6 @@ interface AutocompleteInputProps {
   loading?: boolean;
 }
 
-// Add minimal type definitions for the Google Maps Places API
-declare global {
-  interface Window {
-    initGoogleMapsPlaces: () => void;
-    google: any;
-    googleMapsApiError?: string;
-  }
-}
-
 // Define the City type to match the expected type in handleSelectCity
 interface City {
   id: string;
@@ -85,7 +76,13 @@ const AutocompleteInput: React.FC<AutocompleteInputProps> = ({
       
       // Call the places API
       fetch(`/api/places?input=${encodeURIComponent(trimmedValue)}`)
-        .then(res => res.json())
+        .then(res => {
+          // Handle non-OK response
+          if (!res.ok) {
+            throw new Error(`API returned status ${res.status}`);
+          }
+          return res.json();
+        })
         .then(data => {
           if (data.status === 'OK') {
             // Limit to 3 suggestions maximum

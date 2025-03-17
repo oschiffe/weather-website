@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Card from './Card';
 import WeatherIcon from './WeatherIcon';
@@ -16,12 +16,22 @@ interface WeatherForecastProps {
 }
 
 const WeatherForecast: React.FC<WeatherForecastProps> = ({ 
-  dailyForecast, 
+  dailyForecast = [],
   hourlyForecast = [], 
   cityName = '',
   isLoading = false 
 }) => {
   const [activeTab, setActiveTab] = useState<'hourly' | 'daily'>('daily');
+  const [isDataReady, setIsDataReady] = useState<boolean>(false);
+  
+  // Ensure data is valid before rendering
+  useEffect(() => {
+    if (Array.isArray(dailyForecast) && Array.isArray(hourlyForecast)) {
+      setIsDataReady(true);
+    } else {
+      setIsDataReady(false);
+    }
+  }, [dailyForecast, hourlyForecast]);
   
   // Map API weather condition to our icon type
   const mapConditionToIcon = (condition: string): WeatherCondition => {
@@ -54,6 +64,19 @@ const WeatherForecast: React.FC<WeatherForecastProps> = ({
               <div key={i} className="h-32 bg-gray-200 rounded-md"></div>
             ))}
           </div>
+        </Card>
+      </div>
+    );
+  }
+  
+  // Add a safety check to prevent rendering if data isn't ready
+  if (!isDataReady) {
+    return (
+      <div className="max-w-4xl mx-auto px-4 mt-8">
+        <Card variant="default" padding="lg" className="overflow-hidden">
+          <p className="text-gray-500 dark:text-gray-400 p-4">
+            Loading forecast data...
+          </p>
         </Card>
       </div>
     );
@@ -95,16 +118,20 @@ const WeatherForecast: React.FC<WeatherForecastProps> = ({
           {activeTab === 'hourly' ? (
             <div className="overflow-x-auto pb-2">
               <div className="flex space-x-4 min-w-max">
-                {hourlyForecast.map((hour, index) => (
+                {hourlyForecast && hourlyForecast.length > 0 ? hourlyForecast.map((hour, index) => (
                   <HourlyForecastCard key={index} data={hour} isNow={index === 0} />
-                ))}
+                )) : (
+                  <p className="text-gray-500 dark:text-gray-400 p-4">No hourly forecast data available</p>
+                )}
               </div>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {dailyForecast.map((day, index) => (
+              {dailyForecast && dailyForecast.length > 0 ? dailyForecast.map((day, index) => (
                 <DailyForecastCard key={index} data={day} isToday={index === 0} />
-              ))}
+              )) : (
+                <p className="text-gray-500 dark:text-gray-400 p-4">No daily forecast data available</p>
+              )}
             </div>
           )}
         </Card>

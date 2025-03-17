@@ -1,7 +1,7 @@
-/* Custom styles for Google Places Autocomplete Element */
+/* Custom styles for Autocomplete Element */
 
 /* Style the input part of the element */
-gmpx-place-autocomplete {
+.autocomplete-input {
   width: 100%;
   font-family: inherit;
   font-size: inherit;
@@ -10,7 +10,7 @@ gmpx-place-autocomplete {
 }
 
 /* Style the autocomplete input */
-gmpx-place-autocomplete input {
+.autocomplete-input input {
   width: 100%;
   height: 100%;
   min-height: 44px;
@@ -24,7 +24,7 @@ gmpx-place-autocomplete input {
 }
 
 /* Style the dropdown */
-.pac-container {
+.autocomplete-container {
   border-radius: 8px;
   margin-top: 4px;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
@@ -33,7 +33,7 @@ gmpx-place-autocomplete input {
   background-color: white;
 }
 
-.pac-item {
+.autocomplete-item {
   padding: 8px 12px;
   font-size: 14px;
   cursor: pointer;
@@ -42,46 +42,46 @@ gmpx-place-autocomplete input {
   align-items: center;
 }
 
-.pac-item:first-child {
+.autocomplete-item:first-child {
   border-top: none;
 }
 
-.pac-item:hover, .pac-item-selected {
+.autocomplete-item:hover, .autocomplete-item-selected {
   background-color: #f3f4f6;
 }
 
-.pac-icon {
+.autocomplete-icon {
   margin-right: 10px;
 }
 
-.pac-item-query {
+.autocomplete-item-query {
   font-size: 14px;
   font-weight: 500;
   color: #1f2937;
 }
 
-.pac-matched {
+.autocomplete-matched {
   font-weight: 700;
 }
 
-.pac-placeholder {
+.autocomplete-placeholder {
   color: #9ca3af;
 }
 
 /* Responsive adjustments */
 @media (max-width: 640px) {
-  .pac-container {
+  .autocomplete-container {
     width: 90% !important;
     left: 5% !important;
   }
 }
 
 /* Set the placeholder for the input */
-gmpx-place-autocomplete .placeholder {
+.autocomplete-input .placeholder {
   color: #9ca3af;
 }
 
 /* Style when element is focused */
-gmpx-place-autocomplete:focus-within {
+.autocomplete-input:focus-within {
   outline: none;
 } 

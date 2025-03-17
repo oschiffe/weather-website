@@ -4,12 +4,17 @@ const nextConfig = {
   swcMinify: true,
   env: {
     NEXT_PUBLIC_OPENWEATHER_API_KEY: '7b4a766ffb18c999689c79b166a6d446',
-    NEXT_PUBLIC_GOOGLE_PLACES_API_KEY: process.env.NEXT_PUBLIC_GOOGLE_PLACES_API_KEY,
   },
   images: {
-    domains: ['openweathermap.org', 'maps.googleapis.com', 'maps.gstatic.com', 'openweathermap.co.uk', 'images.unsplash.com', 'api.openweathermap.org'],
+    domains: ['openweathermap.org', 'openweathermap.co.uk', 'images.unsplash.com', 'api.openweathermap.org'],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: '**',
+      },
+    ],
   },
-  // Configure Content Security Policy for Google Maps and allow localhost for Puppeteer
+  // Configure Content Security Policy
   async headers() {
     return [
       {
@@ -18,7 +23,7 @@ const nextConfig = {
           {
             key: 'Content-Security-Policy',
             value:
-              "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' *.googleapis.com *.gstatic.com; style-src 'self' 'unsafe-inline' *.googleapis.com; img-src 'self' data: blob: *.openweathermap.org *.googleapis.com *.gstatic.com; font-src 'self' data: *.googleapis.com *.gstatic.com; connect-src 'self' *.openweathermap.org *.googleapis.com localhost:3025 localhost:8080; frame-src 'self' *.googleapis.com; object-src 'none'"
+              "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: *.openweathermap.org *.openstreetmap.org *.tile.openstreetmap.org; font-src 'self' data:; connect-src 'self' *.openweathermap.org localhost:3025 localhost:8080 *.tile.openstreetmap.org; frame-src 'self'; object-src 'none'"
           }
         ]
       }
@@ -43,13 +48,6 @@ const nextConfig = {
   },
   // Added for MCP compatibility
   experimental: {
-    // Allow remote patterns for image optimization
-    remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: '**',
-      },
-    ],
     // Improve stability with MCP tools
     optimizeCss: true,
     scrollRestoration: true,

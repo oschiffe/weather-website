@@ -63,9 +63,6 @@ const Layout: React.FC<LayoutProps> = ({
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="mobile-web-app-capable" content="yes" />
         <link rel="icon" href="/favicon.ico" />
-        {/* Preconnect to external domains for performance */}
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         {/* Preload critical assets */}
         <link rel="preload" href="/weather-icons/clear.svg" as="image" type="image/svg+xml" />
         {/* Add animation styles */}
@@ -252,67 +249,12 @@ const Layout: React.FC<LayoutProps> = ({
                   <Link href="/privacy" className="text-gray-600 dark:text-gray-400 hover:text-primary transition">
                     Privacy
                   </Link>
-                  <Link href="/contact" className="text-gray-600 dark:text-gray-400 hover:text-primary transition">
-                    Contact
-                  </Link>
                 </div>
               </div>
             </div>
           </div>
         </footer>
       </div>
-      
-      {/* Add animated gradient overlay with reduced opacity */}
-      <div className="gradient-overlay opacity-30"></div>
-      
-      {/* Add animated shapes */}
-      <div 
-        className="animated-shape"
-        style={{
-          left: '15%',
-          top: '10%'
-        }}
-      ></div>
-      <div 
-        className="animated-shape"
-        style={{
-          right: '15%',
-          bottom: '10%',
-          animationDelay: '-5s',
-          opacity: 0.3
-        }}
-      ></div>
-      
-      {/* Add scroll reveal script */}
-      <script
-        dangerouslySetInnerHTML={{
-          __html: `
-            // Scroll reveal functionality
-            document.addEventListener('DOMContentLoaded', function() {
-              const revealElements = document.querySelectorAll('.reveal');
-              
-              function checkVisibility() {
-                revealElements.forEach(element => {
-                  const elementTop = element.getBoundingClientRect().top;
-                  const elementVisible = 150; // Adjust visibility threshold
-                  
-                  if (elementTop < window.innerHeight - elementVisible) {
-                    element.classList.add('reveal-visible');
-                  } else if (!element.classList.contains('reveal-once')) {
-                    element.classList.remove('reveal-visible');
-                  }
-                });
-              }
-              
-              // Check on load
-              checkVisibility();
-              
-              // Check on scroll
-              window.addEventListener('scroll', checkVisibility);
-            });
-          `
-        }}
-      />
     </>
   );
 };

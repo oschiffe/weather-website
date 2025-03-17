@@ -104,8 +104,8 @@ export default function Forecast() {
       );
       
       // Set the hourly and daily forecast data from the API response
-      setHourlyData(forecastData.hourly);
-      setDailyData(forecastData.daily);
+      setHourlyData(forecastData.hourly || []);
+      setDailyData(forecastData.daily || []);
       
       setIsLoading(false);
       
@@ -215,16 +215,28 @@ export default function Forecast() {
               <>
                 {activeView === 'daily' ? (
                   <div className="space-y-2">
-                    {dailyData.map((day, index) => (
-                      <DailyForecastRow key={day.date} day={day} isToday={index === 0} />
-                    ))}
+                    {dailyData && dailyData.length > 0 ? (
+                      dailyData.map((day, index) => (
+                        <DailyForecastRow key={day.date} day={day} isToday={index === 0} />
+                      ))
+                    ) : (
+                      <div className="text-center p-4 text-gray-500">
+                        No daily forecast data available
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="overflow-x-auto pb-2">
                     <div className="flex space-x-4 min-w-max">
-                      {hourlyData.map((hour, index) => (
-                        <HourlyForecastItem key={`${hour.time}-${index}`} hour={hour} isNow={index === 0} />
-                      ))}
+                      {hourlyData && hourlyData.length > 0 ? (
+                        hourlyData.map((hour, index) => (
+                          <HourlyForecastItem key={`${hour.time}-${index}`} hour={hour} isNow={index === 0} />
+                        ))
+                      ) : (
+                        <div className="text-center p-4 text-gray-500 w-full">
+                          No hourly forecast data available
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
